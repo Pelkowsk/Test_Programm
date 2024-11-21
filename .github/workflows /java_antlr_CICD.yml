@@ -1,0 +1,21 @@
+name: Java ANLR4 CI/CD Pipeline 
+
+on: 
+push:
+branches: [master]
+
+pull_request:
+branches: [master]
+
+jobs: 
+build: 
+
+name Build and Test
+
+runs-on: ubuntu-latest
+
+steps: 
+# 1. Checkout Code: 
+- name: Checkout Code
+  uses: actions/checkout@v3
+
