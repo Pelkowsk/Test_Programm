@@ -1,4 +1,4 @@
-name: Java ANLR4 CI/CD Pipeline 
+name: java_antlr_CICD
 
 on: 
 push:
