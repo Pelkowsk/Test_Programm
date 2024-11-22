@@ -1,0 +1,92 @@
+name: CICD
+
+on: 
+  push:
+    branch: [main]
+  pull_request: 
+    branch: [main]
+
+jobs: 
+  build: 
+    name: Build and Test
+      runs-on: ubuntu-latest
+
+steps: 
+# 1. Checkout Code
+- name: Checkout Code 
+  uses: actions/checkout@v3
+
+# 2. Set Up JDK 
+- name: Set up Java 
+  uses: actions/setup-java@v3
+  with: 
+    distribution: 'temurin'
+    java-version: '17'
+
+# 3. Install ANTLR4
+-name: Install ANTLR4
+    run: |
+      curl -O <https://www.antlr.org/download/antlr-4.13.0-complete.jar>
+      echo 'export CLASSPATH=".:$CLASSPATH:$(pwd)/antlr-4.13.0-complete.jar"' >> $GITHUB_ENV
+      echo 'alias antlr4="java -Xmx500M -cp $(pwd)/antlr-4.13.0-complete.jar org.antlr.v4.Tool"' >> $GITHUB_ENV
+      echo 'alias grun="java -Xmx500M -cp $(pwd)/antlr-4.13.0-complete.jar org.antlr.v4.gui.TestRig"' >> $GITHUB_ENV
+
+# 4. Generate Parser from Grammar Files
+- name: Generate Parser from Grammar Files
+    run:  | 
+      mkdir -p ANTLRgenerated
+      antlr4 -Dlanguage=Java -o generated antlr/*.g4
+
+# 5. Build with Gradle 
+- name: Build with Gradle
+    run: ./gradlew clean build
+
+# 6. Run Tests
+- name: Run Unit Tests
+    run: ./gradlew test
+
+# 7. Static Code Analysis
+-name: Run Checkstyle 
+    run: ./gradlew checkstyleMain
+
+license_check: 
+-name: Licence Compliance Check
+    runs-on: ubuntu-latest
+
+steps: 
+# 1. Checkout Code
+-name: Checkout Code 
+    uses: actions/checkout@v3
+  
+# 2. Run License Checker
+-name: Run License Checker
+  uses: fossology/fossology-action@v1
+  with:
+    input: .
+    output: license report
+    output-format: spdx
+
+    docker build: 
+      name: Build and Publish Docker Image
+        runs-on: ubuntu-latest
+        needs: [build,license_check]
+
+  steps: 
+    # 1. Checkout Code
+    -name: Checkout Code
+      uses: actions/checkout@v3
+
+    # 2. Log in to DockerHub
+    -name: Log in to DockerHub
+      uses: docker/login-actions@v2
+        with: 
+          username: ${{ secrets.DOCKER_USERNAME }}
+          passwort: ${{ secrets.DOCKER_PASSWORD }}
+        
+    # 3. Build Docker Image
+    -name: Build Docker Image
+          run: docker Build -t ${{ secrets.DOCKER_USERNAME }}/sysmlv2-parser:latest .
+
+    # 4. Push Docker Image 
+    -name: Push Dokcer Image
+          run: docker push ${{ secrets.DOCKER_USERNAME }}/sysmlv2-parser:latest
