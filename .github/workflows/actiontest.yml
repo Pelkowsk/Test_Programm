@@ -26,8 +26,6 @@ jobs:
            # cache: gradle #verhindert unnötige Schritte (Wrapper-download) durch cache Speichern?
             java-version: 17
 
-      - name: Make Gradlew Executable
-        run: chmod +x gradlew
         
       - name: Build Application (Gradle)
         run: ./gradlew build --no-daemon
